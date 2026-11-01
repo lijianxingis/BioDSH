@@ -1,0 +1,26 @@
+# Build output
+.build/
+.npm-cache/
+
+# Dependencies
+node_modules/
+
+# Research data must never be committed
+.dsh/
+*.fasta
+*.fastq
+*.bam
+*.vcf
+*.csv
+*.tsv
+*.parquet
+
+# Screenshots and verification artefacts
+*.png
+!client/assets/*.png
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

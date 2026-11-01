@@ -1,0 +1,87 @@
+{
+  "name": "dsh-research-workbench",
+  "version": "0.1.0",
+  "description": "DSH 研究工作台：普通与 Biomni 模式、代码编辑器和可追踪研究工作流",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./medical-policy": "./lib/medical-policy.js",
+    "./provenance": "./lib/provenance.js",
+    "./validation": "./lib/validation.js",
+    "./image-qc": "./lib/image-qc.js",
+    "./bundle": "./lib/bundle.js",
+    "./execution-spec": "./lib/execution-spec.js",
+    "./step-executor": "./lib/step-executor.js",
+    "./run-adapter": "./lib/run-adapter.js",
+    "./workflow-engine": "./lib/workflow-engine.js",
+    "./artifact-store": "./lib/artifact-store.js",
+    "./run-journal": "./lib/run-journal.js",
+    "./scheduler": "./lib/scheduler.js",
+    "./identity": "./lib/identity.js",
+    "./quota": "./lib/quota.js",
+    "./rate-limit": "./lib/rate-limit.js",
+    "./step-contract": "./lib/step-contract.js",
+    "./benchmark": "./lib/benchmark.js",
+    "./distributed": "./lib/distributed.js",
+    "./signing": "./lib/signing.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "scripts",
+    "docs",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "THIRD-PARTY-NOTICES.md",
+    "requirements.txt"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-client-resources",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-theme"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test --test-isolation=none lib/step-contract.test.js lib/workflow-engine.test.js"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-scope": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.2"
+  },
+  "devDependencies": {
+    "@codemirror/lang-javascript": "^6.2.0",
+    "@codemirror/lang-json": "^6.0.1",
+    "@codemirror/lang-markdown": "^6.3.0",
+    "@codemirror/lang-python": "^6.2.0",
+    "@codemirror/lang-sql": "^6.9.0",
+    "@codemirror/language": "^6.10.0",
+    "@codemirror/legacy-modes": "^6.4.0",
+    "@deepseek-ai/cordis": "~4.0.5",
+    "codemirror": "^6.0.2",
+    "esbuild": "^0.25.0",
+    "playwright": "^1.56.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.5"
+  }
+}
