@@ -1,0 +1,345 @@
+/* Workspace overview — styled to match the host application.
+   Colours are sampled from the DSH UI: white surfaces, near-black text, 12px card radius,
+   pill buttons, and the host's blue as the single accent. A dark variant keys off the
+   same marker the host sets, rather than inventing a second palette. */
+
+.rw-home {
+  /* The host resets box-sizing globally, but a standalone render does not, and
+     content-box + width:100% + 48px of padding produced a 48px overflow that widened
+     every child. Declaring it here makes the panel independent of the host reset. */
+  box-sizing: border-box;
+  width: 100%;
+  --hw-bg: #ffffff;
+  --hw-surface: #f9fafb;
+  --hw-surface-2: #f3f4f6;
+  --hw-border: rgba(0, 0, 0, .12);
+  --hw-border-strong: rgba(0, 0, 0, .2);
+  --hw-text: #0f1115;
+  --hw-text-2: #4b5563;
+  --hw-text-3: #5b6270;
+  /* #4176e6 measured 4.2:1 on white and failed WCAG AA for text; this is the same hue
+     at 4.6:1. */
+  --hw-accent: #2f5fd0;
+  --hw-accent-soft: #eef3fe;
+  --hw-ok: #0f7b5f;
+  --hw-ok-soft: #e8f6f1;
+  --hw-bad: #c0392b;
+  --hw-busy: #a06a00;
+  --hw-radius-sm: 8px;
+  --hw-radius-md: 12px;
+  --hw-radius-pill: 999px;
+
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  /* Reserve the scrollbar gutter symmetrically: with a one-sided scrollbar the content
+     sits visibly off-centre. */
+  scrollbar-gutter: stable both-edges;
+  padding: 22px 24px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  background: var(--hw-bg);
+  color: var(--hw-text);
+  font-family: inherit;
+}
+
+.rw-home > * {
+  box-sizing: border-box;
+  width: 100%;
+  /* The cap is always the panel width, so the left and right margins come out equal.
+     A fixed pixel cap cannot do that once a scrollbar takes width from one side. */
+  max-width: 100%;
+  margin-inline: 0;
+}
+
+body[data-ds-dark-theme] .rw-home {
+  --hw-bg: transparent;
+  --hw-surface: #ffffff0a;
+  --hw-surface-2: #ffffff14;
+  --hw-border: #ffffff1f;
+  --hw-border-strong: #ffffff29;
+  --hw-text: #f0f2f5;
+  --hw-text-2: #a9b1bd;
+  --hw-text-3: #9aa2b1;
+  --hw-accent: #7aa2f7;
+  --hw-accent-soft: #ffffff14;
+  --hw-ok: #58d3ab;
+  --hw-ok-soft: #58d3ab1a;
+  --hw-bad: #ff8a7a;
+  --hw-busy: #e0b341;
+}
+
+/* ---------------------------------------------------------------- hero
+   Two columns on wide panels, stacked when the panel is narrow, because the workbench
+   is usually a side panel rather than a full page. */
+
+.rw-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 32px;
+  align-items: center;
+  padding-bottom: 8px;
+  min-width: 0;
+}
+
+.rw-hero-copy { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+
+.rw-hero h1 {
+  margin: 0;
+  font-size: clamp(2.25rem, 1rem + 5.2vw, 4.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  color: var(--hw-text);
+}
+
+.rw-hero-lede {
+  margin: 16px 0 0;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--hw-text-2);
+  max-width: 62ch;
+}
+
+.rw-hero-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+
+.rw-hero-stage {
+  min-height: 300px;
+  border-radius: var(--hw-radius-md);
+  /* A fill one tone off the page, not an outline: six outlined boxes on one screen
+     reads as a wireframe. */
+  background: var(--hw-surface-2);
+  padding: 16px 18px 14px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rw-hero-stage-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 14px;
+  color: var(--hw-text-2);
+  margin-bottom: 6px;
+}
+
+.rw-hero-stage-count { font-variant-numeric: tabular-nums; }
+
+.rw-hero-stage-empty { padding: 28px 4px; color: var(--hw-text-3); font-size: 14px; line-height: 1.6; }
+.rw-hero-stage-empty p { margin: 0; max-width: 40ch; }
+
+.rw-hero-stage .rw-dna { flex: 1; min-height: 0; }
+.rw-hero-stage .rw-dna-canvas { flex: 1; min-height: 200px; }
+
+.rw-hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--hw-radius-sm);
+  background: var(--hw-bg);
+}
+
+.rw-hero-metrics > div { display: flex; flex-direction: column; gap: 2px; }
+.rw-hero-metrics dt { font-size: 12px; color: var(--hw-text-3); }
+.rw-hero-metrics dd { margin: 0; font-size: 20px; font-variant-numeric: tabular-nums; color: var(--hw-text); line-height: 1.1; }
+.rw-hero-metrics dd.is-bad { color: var(--hw-bad); }
+
+/* ---------------------------------------------------------------- sections */
+
+.rw-home-section { display: flex; flex-direction: column; gap: 12px; }
+
+.rw-home-section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+
+.rw-home-section-head h2 { margin: 0; font-size: 17px; font-weight: 600; color: var(--hw-text); }
+
+.rw-home-count { font-size: 14px; color: var(--hw-text-3); font-variant-numeric: tabular-nums; }
+
+.rw-home-note { margin: 0; font-size: 15px; line-height: 1.6; color: var(--hw-text-3); max-width: 62ch; }
+
+.rw-home-error { margin: 0; font-size: 14px; color: var(--hw-bad); }
+
+/* ---------------------------------------------------------------- capabilities
+   A single-column sequence, each row a 5/7 split with the statement on one side and the
+   real fragment on the other, alternating so the column never becomes a zigzag. */
+
+.rw-capabilities { display: flex; flex-direction: column; gap: 22px; }
+
+.rw-cap {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 26px;
+  align-items: center;
+}
+
+.rw-cap--flip .rw-cap-copy { order: 2; }
+.rw-cap--flip .rw-cap-shot { order: 1; }
+
+.rw-cap-copy h3 {
+  margin: 0 0 8px;
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--hw-text);
+  letter-spacing: -0.01em;
+}
+
+.rw-cap-copy p { margin: 0; font-size: 15px; line-height: 1.65; color: var(--hw-text-2); max-width: 34ch; }
+
+.rw-cap-shot { margin: 0; min-width: 0; }
+
+.rw-cap-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--hw-radius-md);
+  background: var(--hw-surface-2);
+}
+
+/* ---------------------------------------------------------------- cards */
+
+.rw-home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.rw-home-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px 16px;
+  border: 0;
+  border-radius: var(--hw-radius-md);
+  background: var(--hw-surface-2);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.rw-home-card-top { display: flex; justify-content: space-between; align-items: center; }
+
+.rw-home-badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: var(--hw-radius-pill);
+  background: var(--hw-accent-soft);
+  color: var(--hw-accent);
+}
+
+.rw-home-card-arrow { color: var(--hw-text-3); font-size: 14px; }
+.rw-home-card-title { font-size: 15px; font-weight: 600; color: var(--hw-text); }
+.rw-home-card-desc { font-size: 14px; line-height: 1.55; color: var(--hw-text-3); flex: 1; }
+.rw-home-card-foot { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.rw-home-pill {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: var(--hw-radius-pill);
+  background: var(--hw-bg);
+  color: var(--hw-text-3);
+}
+
+.rw-home-pill--ok { background: var(--hw-ok-soft); color: var(--hw-ok); }
+
+/* ---------------------------------------------------------------- runs */
+
+.rw-home-runs { display: flex; flex-direction: column; gap: 8px; }
+
+.rw-home-run {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: var(--hw-radius-sm);
+  background: var(--hw-surface-2);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.rw-home-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--hw-text-3); }
+.rw-home-dot--ok { background: var(--hw-ok); }
+.rw-home-dot--bad { background: var(--hw-bad); }
+.rw-home-dot--busy { background: var(--hw-busy); }
+
+.rw-home-run-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rw-home-run-title { font-size: 14px; font-weight: 500; color: var(--hw-text); }
+.rw-home-run-meta { font-size: 13px; color: var(--hw-text-3); max-width: 54ch; }
+.rw-home-run-time { font-size: 13px; color: var(--hw-text-3); font-variant-numeric: tabular-nums; }
+
+.rw-home-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border-radius: var(--hw-radius-md);
+  background: var(--hw-surface-2);
+  color: var(--hw-text-3);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.rw-home-empty p { margin: 0; max-width: 52ch; }
+
+/* ---------------------------------------------------------------- buttons */
+
+.rw-home-primary,
+.rw-home-secondary {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: var(--hw-radius-pill);
+  cursor: pointer;
+  border: 0;
+}
+
+.rw-home-primary { background: var(--hw-accent); color: #ffffff; font-weight: 500; }
+.rw-home-secondary { background: var(--hw-surface-2); color: var(--hw-text); }
+
+.rw-home-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--hw-accent);
+  cursor: pointer;
+}
+
+.rw-home-cwd {
+  margin: 14px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--hw-text-3);
+}
+
+.rw-home-cwd code { font-family: ui-monospace; font-size: 12px; }
+
+/* ---------------------------------------------------------------- narrow panels */
+
+@media (max-width: 900px) {
+  .rw-hero { grid-template-columns: minmax(0, 1fr); gap: 20px; padding-bottom: 18px; }
+  .rw-hero-copy { justify-content: flex-start; }
+}
+
+@media (max-width: 760px) {
+  .rw-cap { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .rw-cap--flip .rw-cap-copy { order: 0; }
+  .rw-cap--flip .rw-cap-shot { order: 0; }
+  .rw-cap-copy p { max-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rw-hero * { transition: none !important; }
+}

@@ -1,0 +1,5 @@
+# Python packages the bundled scripts import. The host discovers an interpreter
+# that already has these; it does not install anything for you.
+biopython>=1.80
+pandas>=2.0
+matplotlib>=3.7

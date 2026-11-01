@@ -1,0 +1,46 @@
+/* Panel shell: navigation, body, and the placeholder used when a host capability is
+   absent. Colours come from the host tokens declared in home.css so every view agrees. */
+
+.rw-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--hw-bg, #ffffff);
+  color: var(--hw-text, #0f1115);
+  font-family: inherit;
+}
+
+.rw-nav {
+  display: flex;
+  gap: 4px;
+  padding: 10px 16px 0;
+  flex: none;
+}
+
+.rw-nav-item {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: var(--hw-radius-pill, 999px);
+  background: transparent;
+  color: var(--hw-text-3, #5b6270);
+  cursor: pointer;
+}
+
+.rw-nav-item.is-active {
+  background: var(--hw-surface-2, #f3f4f6);
+  color: var(--hw-text, #0f1115);
+  font-weight: 500;
+}
+
+.rw-body { flex: 1; min-height: 0; display: flex; }
+
+.rw-placeholder {
+  flex: 1;
+  padding: 24px;
+  color: var(--hw-text-3, #5b6270);
+  font-size: 15px;
+  line-height: 1.6;
+}

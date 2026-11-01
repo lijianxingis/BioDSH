@@ -1,0 +1,85 @@
+/* Glowing Effect — same geometry as the registry component, no Tailwind.
+   The mask trick is what makes a conic gradient read as a border: two mask layers, one
+   for the padding box and one for the border box, intersected, so only the ring between
+   them keeps paint. */
+
+.rw-glow {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 1;
+  transition: opacity .3s ease;
+  will-change: opacity;
+  z-index: 2;
+}
+
+.rw-glow-inner {
+  border-radius: inherit;
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.rw-glow-inner::after {
+  content: "";
+  border-radius: inherit;
+  position: absolute;
+  inset: calc(-1 * var(--glowingeffect-border-width));
+  border: var(--glowingeffect-border-width) solid transparent;
+  background: var(--gradient);
+  background-attachment: fixed;
+  opacity: var(--active);
+  filter: saturate(1.25) brightness(1.02);
+  transition: opacity .35s ease;
+  mask-clip: padding-box, border-box;
+  mask-composite: intersect;
+  mask-image:
+    linear-gradient(#0000, #0000),
+    conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg));
+  -webkit-mask-clip: padding-box, border-box;
+  -webkit-mask-composite: source-in;
+  -webkit-mask-image:
+    linear-gradient(#0000, #0000),
+    conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg));
+}
+
+.rw-glow-inner--on { opacity: 1; }
+
+/* A glow that chases the pointer is precisely what reduced-motion asks to be spared. */
+@media (prefers-reduced-motion: reduce) {
+  .rw-glow-inner::after { transition: none; opacity: 0; }
+}
+
+/* ---------------------------------------------------------------- DNA helix */
+
+.rw-dna {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  --dna-ink: var(--hw-text);
+  --dna-faint: var(--hw-border-strong);
+  --dna-accent: var(--hw-accent);
+}
+
+.rw-dna-canvas { width: 100%; display: block; cursor: crosshair; }
+
+.rw-dna-caption {
+  min-height: 20px;
+  font-size: 13px;
+  color: var(--hw-text-3);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.rw-dna-caption code {
+  font-size: 12px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--hw-surface-2);
+  color: var(--hw-text-2);
+}
+
+.rw-dna-hint { font-variant-numeric: tabular-nums; }

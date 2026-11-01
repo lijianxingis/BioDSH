@@ -1,0 +1,7 @@
+/* Workflow panel styles. Kept separate from the overview so the two views can change
+   without touching each other. */
+
+.rw-workflow { display: flex; flex-direction: column; gap: 14px; padding: 16px 20px; width: 100%; }
+.rw-workflow-step { padding: 12px 14px; border-radius: 8px; background: #f3f4f6; }
+.rw-workflow-step-title { font-size: 14px; font-weight: 600; }
+.rw-workflow-step-body { font-size: 13px; color: #4b5563; margin-top: 4px; }
