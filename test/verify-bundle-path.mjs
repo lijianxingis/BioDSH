@@ -9,7 +9,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { definePlan, runPlan } from "../lib/workflow-engine.js"
 import { appendAudit, createProvenance, recordArtifact, recordExecution, setDecisionGate, verifyProvenance } from "../lib/provenance.js"
-import { createBundle, verifyBundle, bundleDigest, LIMITATIONS } from "../lib/bundle.js"
+import { createBundle, signBundle, verifyBundle, bundleDigest, LIMITATIONS } from "../lib/bundle.js"
 import { generateSigningKey, signDigest, verifySignature, describeKey } from "../lib/signing.js"
 import { createReport } from "./harness.mjs"
 
@@ -57,15 +57,26 @@ try {
   dropArtifact.provenance.artifacts = []
   report.check("deleting-an-artifact-is-caught", verifyBundle(dropArtifact, {}).status === "fail")
 
-  // Signature: valid, invalid, and authenticated are three different answers.
+  // Signature: valid, invalid, tampered and authenticated are four different answers.
   const key = generateSigningKey()
   const signature = { ...signDigest(bundle.integrity.bundleSha256, key.privateKey), keyId: key.keyId }
   report.check("signature-verifies-against-its-key", verifySignature(signature, key.publicKey) === "valid")
   report.check("signature-is-invalid-with-another-key", verifySignature(signature, generateSigningKey().publicKey) === "invalid")
-  const signed = { ...bundle, signature, environment: { ...bundle.environment, publicKey: key.publicKey } }
-  report.check("signed-bundle-reports-valid", verifyBundle(signed, {}).signatureStatus === "valid")
-  report.check("signed-is-not-authenticated-without-trust", verifyBundle(signed, { trustedKeys: [] }).authenticated === false)
-  report.check("authenticated-with-a-trusted-key", verifyBundle(signed, { trustedKeys: [key.keyId] }).authenticated === true)
+
+  // Signing has to cover the final content. Adding the public key changes the digest, so
+  // the digest is recomputed and written back BEFORE signing - otherwise the signature
+  // covers bytes that no longer exist in the bundle.
+  const keyed = createBundle({ run, exportedAt: "2026-01-01T00:00:00Z", environment: { pluginVersion: "0.1.0", publicKey: key.publicKey } }).bundle
+  const intact = signBundle(keyed, key.privateKey, key.keyId)
+  report.check("signed-bundle-reports-valid", verifyBundle(intact, {}).signatureStatus === "valid")
+  report.check("signed-bundle-verifies", verifyBundle(intact, {}).status === "pass")
+  report.check("signed-is-not-authenticated-without-trust", verifyBundle(intact, { trustedKeys: [] }).authenticated === false)
+  report.check("authenticated-with-a-trusted-key", verifyBundle(intact, { trustedKeys: [key.keyId] }).authenticated === true)
+
+  // A valid signature over content that has since changed is not authentication.
+  const edited = { ...intact, run: { ...intact.run, title: "edited after signing" } }
+  report.check("edited-after-signing-is-not-authenticated", verifyBundle(edited, { trustedKeys: [key.keyId] }).authenticated === false)
+
   report.check("key-describes-itself-as-self-signed", describeKey(key).selfSigned === true)
 
   // A malformed bundle must be a verdict, not a crash.
