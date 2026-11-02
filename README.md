@@ -16,6 +16,21 @@
 
 这个插件把「执行」和「证据」绑在一起：每一步由宿主真实执行、产物按字节哈希登记、审计链可离线自校验。**它不替你判断生物学结论对不对**。
 
+## 装完就能用，不一定要 DSH
+
+引擎是纯 Node，**零外部依赖**。23 个模块里只有 `host.js` 用到了 DSH。
+
+```bash
+git clone https://github.com/lijianxingis/BioDSH.git && cd BioDSH
+npm install --ignore-scripts
+node bin/dsh-research.mjs doctor
+node bin/dsh-research.mjs run sequence-analysis --workspace ./work
+```
+
+完整命令：`init` / `templates` / `plan` / `run` / `runs` / `verify` / `export` / `check` / `doctor`。
+
+接别的 agent 只需要实现 **6 个 adapter 函数**，见 [docs/using-without-dsh.md](docs/using-without-dsh.md)。
+
 ## 它到底做什么
 
 **把 Biomni 的生信工具接进来，并给每次调用留下可核验的证据。**
