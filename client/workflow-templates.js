@@ -88,6 +88,33 @@ const medicalMetadata = {
   ],
 }
 
+const containerAnalysis = {
+  id: 'container-r-analysis',
+  badge: '容器',
+  title: '容器内统计建模',
+  description: '在固定 digest 的 R 镜像中拟合线性模型，网络关闭，产物按字节哈希登记。',
+  preset: 'biomni',
+  backend: 'container',
+  image: 'docker.m.daocloud.io/library/r-base@sha256:205aca88535e1a066c72c84d7a149747665da41cafabb951ccae8dd4e6f0c308',
+  steps: [
+    step('inspect-data', '检查表达量矩阵', '在容器内确认 expression 与 group 两列存在。', {
+      // Runs inside the image: file(1) and head are part of it, and a host Python script
+      // is not, because the mount only carries the workspace.
+      command: 'head -n 3 expression.csv',
+      inputs: [{ path: 'expression.csv', required: true }],
+      outputs: [],
+      timeoutMs: 60000,
+    }),
+    step('fit-model', '拟合线性模型', '在容器内用 R 拟合 expression ~ group，写出模型摘要。', {
+      command: 'Rscript model.R expression.csv model-result.json',
+      needs: ['inspect-data'],
+      inputs: [{ path: 'expression.csv', required: true }],
+      outputs: [{ path: 'model-result.json', mediaType: 'application/json', minBytes: 80 }],
+      timeoutMs: 180000,
+    }),
+  ],
+}
+
 const custom = {
   id: 'custom',
   badge: '自定义',
@@ -101,6 +128,7 @@ export const WORKFLOW_TEMPLATES = Object.freeze([
   sequenceAnalysis,
   localDataAnalysis,
   literatureEvidence,
+  containerAnalysis,
   medicalMetadata,
   custom,
 ])

@@ -14,6 +14,11 @@ import { probeContainerRuntime, runContainerSpec, runProcessSpec } from "../lib/
 import { createReport } from "./harness.mjs"
 
 const report = createReport("verify-container-live")
+
+// A real scientific toolchain, pinned by digest. The busybox checks above prove the
+// mechanism; this one proves the mechanism works with an actual analysis image.
+const SCIENTIFIC_IMAGE = process.env.VERIFY_SCIENTIFIC_IMAGE
+  ?? "docker.m.daocloud.io/library/r-base@sha256:205aca88535e1a066c72c84d7a149747665da41cafabb951ccae8dd4e6f0c308"
 const args = process.argv.slice(2)
 const imageFlag = args.indexOf("--image")
 const requestedImage = imageFlag !== -1 ? args[imageFlag + 1] : undefined
@@ -87,6 +92,60 @@ if (probe.available !== true) {
     report.check("process-backend-declares-its-level", processResult.isolation?.level === "process")
   } finally {
     await rm(workspace, { recursive: true, force: true }).catch(() => {})
+  }
+
+  // A real analysis inside a real scientific image. This is the claim the project makes
+  // and the one that had never been tested against a toolchain that does science.
+  const probeDir = await mkdtemp(join(tmpdir(), "dsh-r-"))
+  const scientific = await runContainerSpec(
+    defineExecutionSpec({ image: SCIENTIFIC_IMAGE, command: ["Rscript", "--version"] }),
+    { cwd: probeDir, timeoutMs: 180000, probe },
+  )
+  if (scientific.exitCode === 125) {
+    report.skip("scientific-image-available", "image not present locally and the registry is unreachable")
+  } else {
+    // Rscript prints "Rscript (R) version 4.3.3"; a check for "R version" would fail on a
+  // working image. Match the version number instead of one spelling of the banner.
+  report.check("scientific-image-runs", scientific.status === "completed" && /version \d+\.\d+\.\d+/.test(scientific.stdoutTail), (scientific.stdoutTail.split("\n")[0] ?? "").slice(0, 40))
+    report.check("scientific-image-has-no-network", scientific.isolation?.network === "none")
+
+    // The analysis itself: fit a linear model offline and check the coefficient.
+    const workdir = await mkdtemp(join(tmpdir(), "dsh-fit-"))
+    try {
+      const { writeFile, readFile } = await import("node:fs/promises")
+      const rows = ["expression,group"]
+      for (const [group, base, n] of [["control", 5.0, 20], ["treated", 7.4, 20], ["resistant", 6.1, 20]]) {
+        for (let i = 0; i < n; i++) rows.push((base + ((i * 37) % 21) / 21 * 2.4 - 1.2).toFixed(3) + "," + group)
+      }
+      await writeFile(join(workdir, "expression.csv"), rows.join("\n") + "\n", "utf8")
+      await writeFile(join(workdir, "model.R"), [
+        'args <- commandArgs(trailingOnly = TRUE)',
+        'd <- read.csv(args[1])',
+        'fit <- lm(expression ~ group, data = d)',
+        'cat(format(coef(fit)[["grouptreated"]], digits = 6), "\n")',
+        'cat(format(summary(fit)$r.squared, digits = 6), "\n")',
+      ].join("\n"), "utf8")
+
+      const inner = (value) => process.platform === "win32"
+        ? "/" + value[0].toLowerCase() + "/" + value.slice(3).replace(/\\/g, "/")
+        : value
+      const fit = await runContainerSpec(
+        defineExecutionSpec({
+          image: SCIENTIFIC_IMAGE,
+          command: ["Rscript", "model.R", "expression.csv"],
+          mounts: [{ target: inner(workdir), readOnly: false }],
+        }),
+        { cwd: workdir, timeoutMs: 180000, probe },
+      )
+      const lines = fit.stdoutTail.trim().split("\n")
+      const effect = Number(lines[0])
+      const r2 = Number(lines[1])
+      // The data has a +2.4 group effect; a fit that lands near it is doing real work.
+      report.check("real-model-fits-in-the-container", fit.status === "completed" && Math.abs(effect - 2.4) < 0.6, "effect=" + effect)
+      report.check("real-model-reports-fit-quality", Number.isFinite(r2) && r2 > 0.4 && r2 < 1, "r2=" + r2)
+    } finally {
+      await rm(workdir, { recursive: true, force: true }).catch(() => {})
+    }
   }
 }
 
