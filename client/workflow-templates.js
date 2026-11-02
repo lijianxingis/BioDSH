@@ -171,6 +171,35 @@ const timeCourse = {
   ],
 }
 
+// The point of the project: Biomni supplies the science, the workbench records the
+// evidence. Each step calls one named Biomni tool and registers the JSON it produced.
+const biomniToolkit = {
+  id: 'biomni-toolkit',
+  badge: 'Biomni',
+  title: 'Biomni 工具链',
+  description: '调用 Biomni 的分子生物学工具，每个结果都登记字节数与哈希。不经 LLM 选工具。',
+  preset: 'biomni',
+  steps: [
+    step('inventory', '清点可用工具', '列出能加载的 Biomni 模块与函数数，以及因缺依赖而不可用的模块。', {
+      command: `${INTERPRETER_PLACEHOLDER} {{scripts}}/biomni_bridge.py list --json biomni-inventory.json`,
+      outputs: [{ path: 'biomni-inventory.json', mediaType: 'application/json', minBytes: 200 }],
+      timeoutMs: 300000,
+    }),
+    step('restriction-sites', '酶切位点分析', '在给定序列上找限制酶切位点。', {
+      command: `${INTERPRETER_PLACEHOLDER} {{scripts}}/biomni_bridge.py call molecular_biology find_restriction_enzymes --args "{\"sequence\": \"ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG\", \"is_circular\": false}" --out restriction-sites.json`,
+      needs: ['inventory'],
+      outputs: [{ path: 'restriction-sites.json', mediaType: 'application/json', minBytes: 100 }],
+      timeoutMs: 300000,
+    }),
+    step('reading-frames', '开放阅读框注释', '在正链上找开放阅读框，最短 30 bp。', {
+      command: `${INTERPRETER_PLACEHOLDER} {{scripts}}/biomni_bridge.py call molecular_biology annotate_open_reading_frames --args "{\"sequence\": \"ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG\", \"min_length\": 30}" --out reading-frames.json`,
+      needs: ['inventory'],
+      outputs: [{ path: 'reading-frames.json', mediaType: 'application/json', minBytes: 100 }],
+      timeoutMs: 300000,
+    }),
+  ],
+}
+
 const custom = {
   id: 'custom',
   badge: '自定义',
@@ -184,6 +213,7 @@ export const WORKFLOW_TEMPLATES = Object.freeze([
   sequenceAnalysis,
   localDataAnalysis,
   literatureEvidence,
+  biomniToolkit,
   bioconductorDE,
   timeCourse,
   containerAnalysis,

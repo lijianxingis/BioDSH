@@ -62,7 +62,7 @@
   "scripts": {
     "build": "node build.mjs",
     "test": "node --test --test-isolation=none lib/step-contract.test.js lib/workflow-engine.test.js lib/provenance.test.js lib/governance.test.js lib/host.test.js lib/image-qc.test.js lib/distributed.test.js lib/index.test.js client/workflow-templates.test.js client/views.test.mjs",
-    "verify": "node test/verify-goal.mjs && node test/verify-coverage.mjs && node test/verify-host-contract.mjs && node test/verify-bundle-path.mjs && node test/verify-distributed-identity.mjs && node test/verify-container-live.mjs && node test/verify-bioconductor.mjs && node test/verify-real-data.mjs",
+    "verify": "node test/verify-goal.mjs && node test/verify-coverage.mjs && node test/verify-host-contract.mjs && node test/verify-bundle-path.mjs && node test/verify-distributed-identity.mjs && node test/verify-container-live.mjs && node test/verify-bioconductor.mjs && node test/verify-real-data.mjs && node test/verify-biomni.mjs",
     "verify:container": "node test/verify-container-live.mjs"
   },
   "dependencies": {
