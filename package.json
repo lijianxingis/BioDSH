@@ -59,7 +59,7 @@
   },
   "scripts": {
     "build": "node build.mjs",
-    "test": "node --test --test-isolation=none lib/step-contract.test.js lib/workflow-engine.test.js"
+    "test": "node --test --test-isolation=none lib/step-contract.test.js lib/workflow-engine.test.js lib/provenance.test.js lib/governance.test.js lib/host.test.js lib/index.test.js client/workflow-templates.test.js"
   },
   "dependencies": {
     "@deepseek-ai/dsh-scope": "0.2.1-rc.2",
