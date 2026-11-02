@@ -7617,19 +7617,19 @@ function DnaHelix({ events = [], height = 260, turns = 3.4, selected = null, onS
     }));
   }, [events]);
   const draw = (0, import_react2.useCallback)(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const canvas2 = canvasRef.current;
+    if (!canvas2) return;
+    const ctx = canvas2.getContext("2d");
     if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
-    const width = canvas.clientWidth;
-    if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
-      canvas.width = Math.round(width * dpr);
-      canvas.height = Math.round(height * dpr);
+    const width = canvas2.clientWidth;
+    if (canvas2.width !== Math.round(width * dpr) || canvas2.height !== Math.round(height * dpr)) {
+      canvas2.width = Math.round(width * dpr);
+      canvas2.height = Math.round(height * dpr);
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
-    const styles = getComputedStyle(canvas);
+    const styles = getComputedStyle(canvas2);
     const ink = styles.getPropertyValue("--dna-ink").trim() || "#0f1115";
     const faint = styles.getPropertyValue("--dna-faint").trim() || "rgba(0,0,0,.12)";
     const accent = styles.getPropertyValue("--dna-accent").trim() || "#2f5fd0";
@@ -7692,19 +7692,19 @@ function DnaHelix({ events = [], height = 260, turns = 3.4, selected = null, onS
     return () => cancelAnimationFrame(frameRef.current);
   }, [draw, reduced]);
   const handleMove = (event) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
+    const canvas2 = canvasRef.current;
+    if (!canvas2) return;
+    const rect = canvas2.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    const radius = Math.min(canvas.clientWidth * 0.34, 128);
+    const radius = Math.min(canvas2.clientWidth * 0.34, 128);
     const pad = 18;
     const innerHeight = height - pad * 2;
     let best = null;
     let bestDistance = Infinity;
     for (const rung of rungs) {
-      const a = project(rung.t, phaseRef.current, radius, canvas.clientWidth, innerHeight, turns);
-      const b = project(rung.t, phaseRef.current + Math.PI, radius, canvas.clientWidth, innerHeight, turns);
+      const a = project(rung.t, phaseRef.current, radius, canvas2.clientWidth, innerHeight, turns);
+      const b = project(rung.t, phaseRef.current + Math.PI, radius, canvas2.clientWidth, innerHeight, turns);
       const distance = Math.hypot(x - (a.x + b.x) / 2, y - (a.y + b.y) / 2 + pad);
       if (distance < bestDistance) {
         bestDistance = distance;
@@ -9000,11 +9000,165 @@ body[data-ds-dark-theme] .rw-home {
 .rw-dna-hint { font-variant-numeric: tabular-nums; }
 `;
 
+// site/effects.js
+var DEFAULTS = {
+  spacing: 26,
+  radius: 1.6,
+  baseColour: [0, 0, 0],
+  baseAlpha: 0.1,
+  highlightColour: [47, 95, 208],
+  highlightAlpha: 0.95,
+  influenceRadius: 150,
+  fadeFrom: 0.45,
+  fadeTo: 1
+};
+function smoothstep(edge0, edge1, x) {
+  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+function createDotField(canvas2, options = {}) {
+  const config = { ...DEFAULTS, ...options };
+  const context = canvas2.getContext("2d", { alpha: true });
+  if (!context) return { destroy() {
+  } };
+  const pointer = { x: -9999, y: -9999, active: false };
+  const trail = /* @__PURE__ */ new Map();
+  let frame = 0;
+  let width = 0;
+  let height = 0;
+  let dpr = 1;
+  let reduced = false;
+  const media = typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : void 0;
+  const applyReduced = () => {
+    reduced = media?.matches === true;
+  };
+  applyReduced();
+  media?.addEventListener?.("change", applyReduced);
+  function resize() {
+    const rect = canvas2.getBoundingClientRect();
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = rect.width;
+    height = rect.height;
+    canvas2.width = Math.round(width * dpr);
+    canvas2.height = Math.round(height * dpr);
+    context.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function key(x, y) {
+    return Math.round(x / config.spacing) + ":" + Math.round(y / config.spacing);
+  }
+  function draw() {
+    context.clearRect(0, 0, width, height);
+    for (const [id, value] of trail) {
+      const next = value * 0.92;
+      if (next < 0.01) trail.delete(id);
+      else trail.set(id, next);
+    }
+    const cols = Math.ceil(width / config.spacing) + 1;
+    const rows = Math.ceil(height / config.spacing) + 1;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const x = col * config.spacing + config.spacing / 2;
+        const y = row * config.spacing + config.spacing / 2;
+        const distance = pointer.active ? Math.hypot(x - pointer.x, y - pointer.y) : Number.POSITIVE_INFINITY;
+        const proximity = 1 - smoothstep(0, config.influenceRadius, distance);
+        const accumulated = trail.get(key(x, y)) ?? 0;
+        const influence = Math.max(proximity, accumulated);
+        const verticalFade = 1 - smoothstep(config.fadeFrom, config.fadeTo, y / Math.max(1, height));
+        const alpha = config.baseAlpha * verticalFade + config.highlightAlpha * influence * verticalFade;
+        if (alpha <= 5e-3) continue;
+        const r = config.radius * (1 + influence * 1.8);
+        const [br, bg, bb] = config.baseColour;
+        const [hr, hg, hb] = config.highlightColour;
+        const mix = Math.min(1, influence);
+        context.beginPath();
+        context.arc(x, y, r, 0, Math.PI * 2);
+        context.fillStyle = "rgba(" + [
+          Math.round(br + (hr - br) * mix),
+          Math.round(bg + (hg - bg) * mix),
+          Math.round(bb + (hb - bb) * mix)
+        ].join(",") + "," + alpha.toFixed(3) + ")";
+        context.fill();
+      }
+    }
+  }
+  function loop() {
+    draw();
+    frame = requestAnimationFrame(loop);
+  }
+  function onPointerMove(event) {
+    const rect = canvas2.getBoundingClientRect();
+    pointer.x = event.clientX - rect.left;
+    pointer.y = event.clientY - rect.top;
+    pointer.active = true;
+    trail.set(key(pointer.x, pointer.y), 1);
+  }
+  function onPointerLeave() {
+    pointer.active = false;
+  }
+  function onResize() {
+    resize();
+    draw();
+  }
+  resize();
+  if (reduced) {
+    draw();
+  } else {
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("pointerleave", onPointerLeave, { passive: true });
+    window.addEventListener("resize", onResize, { passive: true });
+    frame = requestAnimationFrame(loop);
+  }
+  return {
+    destroy() {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerleave", onPointerLeave);
+      window.removeEventListener("resize", onResize);
+      media?.removeEventListener?.("change", applyReduced);
+    }
+  };
+}
+function countOnView(element, { duration = 900, format = (value) => String(value) } = {}) {
+  const target = Number(element.dataset.count ?? element.textContent ?? 0);
+  if (!Number.isFinite(target)) return () => {
+  };
+  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+  if (reduced) {
+    element.textContent = format(target);
+    return () => {
+    };
+  }
+  let frame = 0;
+  let startedAt = 0;
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      observer.disconnect();
+      startedAt = performance.now();
+      const step2 = (now) => {
+        const progress = Math.min(1, (now - startedAt) / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        element.textContent = format(Math.round(target * eased));
+        if (progress < 1) frame = requestAnimationFrame(step2);
+      };
+      frame = requestAnimationFrame(step2);
+    }
+  }, { threshold: 0.4 });
+  observer.observe(element);
+  return () => {
+    observer.disconnect();
+    cancelAnimationFrame(frame);
+  };
+}
+
 // site/site.js
 var style = document.createElement("style");
 style.textContent = styles_default;
 document.head.appendChild(style);
 var api = createDemoApi();
+var canvas = document.getElementById("dot-field");
+if (canvas) createDotField(canvas, { spacing: 28, radius: 1.5, influenceRadius: 170 });
+for (const element of document.querySelectorAll("[data-count]")) countOnView(element);
 (0, import_client.createRoot)(document.getElementById("app")).render(
   import_react6.default.createElement(WorkbenchHome, {
     api,

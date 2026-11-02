@@ -11,7 +11,18 @@ const style = document.createElement('style')
 style.textContent = styles
 document.head.appendChild(style)
 
+import { createDotField, countOnView } from './effects.js'
+
 const api = createDemoApi()
+
+// The hero background. Decorative only: it carries no information, and the same page is
+// readable with it switched off.
+const canvas = document.getElementById('dot-field')
+if (canvas) createDotField(canvas, { spacing: 28, radius: 1.5, influenceRadius: 170 })
+
+// Numbers count up when they enter the viewport. The value is in the markup already, so
+// a reader without script still sees the number.
+for (const element of document.querySelectorAll('[data-count]')) countOnView(element)
 
 createRoot(document.getElementById('app')).render(
   React.createElement(WorkbenchHome, {

@@ -69,6 +69,36 @@
   }
   #app { width: 100%; display: flex; min-width: 0; }
 
+  /* Scroll-driven reveal. animation-timeline: view() is a browser primitive: no scroll
+     listener, no library, and the work happens on the compositor. Browsers without it
+     simply show the content, which is why the base state is visible. */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      section.block > .wrap > *,
+      .card, .frame {
+        animation: reveal-in linear both;
+        animation-timeline: view();
+        animation-range: entry 5% cover 28%;
+      }
+    }
+  }
+  @keyframes reveal-in {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* The hero background canvas sits behind the text and never intercepts a pointer. */
+  .hero { position: relative; overflow: hidden; }
+  #dot-field {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+  }
+  .hero .lede { position: relative; }
+
   section.block { padding: 12px 0 64px; }
   section.block > .wrap > h3 { margin: 0 0 6px; font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
   section.block > .wrap > p.sub { margin: 0 0 26px; color: #5b6270; font-size: 15px; max-width: 62ch; }
@@ -121,17 +151,20 @@
 </header>
 
 <main>
-  <div class="wrap lede">
+  <div class="hero">
+    <canvas id="dot-field" aria-hidden="true"></canvas>
+    <div class="wrap lede">
     <h2>软件最有说服力的时候，它在眼前干活。</h2>
     <p>
       下面是工作台自己的界面，不是效果图。同一套组件既跑在 DSH 内部，也跑在这个页面上——
       换掉的只是传输层。数据来自真实运行记录：产物名、字节数、哈希前缀都对得上。
     </p>
-    <div class="badges">
-      <span class="badge">真实组件</span>
-      <span class="badge">纯 Node 引擎</span>
-      <span class="badge">产物按字节登记</span>
-      <span class="badge badge--warn">研究用途 · 未做临床验证</span>
+      <div class="badges">
+        <span class="badge">真实组件</span>
+        <span class="badge">纯 Node 引擎</span>
+        <span class="badge">产物按字节登记</span>
+        <span class="badge badge--warn">研究用途 · 未做临床验证</span>
+      </div>
     </div>
   </div>
 
@@ -185,9 +218,9 @@
       <h3>数字</h3>
       <p class="sub">每一项都能用 <code>npm run verify</code> 复跑。跑不过就不该信这句话。</p>
       <div class="grid three" style="margin-bottom: 28px">
-        <div class="card"><div class="num">95</div><div class="label">单元测试</div></div>
-        <div class="card"><div class="num">151</div><div class="label">验证检查</div></div>
-        <div class="card"><div class="num">11</div><div class="label">验证脚本</div></div>
+        <div class="card"><div class="num" data-count="95">95</div><div class="label">单元测试</div></div>
+        <div class="card"><div class="num" data-count="151">151</div><div class="label">验证检查</div></div>
+        <div class="card"><div class="num" data-count="11">11</div><div class="label">验证脚本</div></div>
       </div>
 
       <table>
