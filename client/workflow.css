@@ -149,3 +149,29 @@
   color: #5b6270;
   cursor: pointer;
 }
+
+
+/* ---------------------------------------------------------------- view transitions */
+
+/* The old view fades out while the new one fades in. Naming the element means the browser
+   animates the content rather than the whole page, so the nav does not flicker. */
+::view-transition-old(workbench-view) {
+  animation: 180ms cubic-bezier(.4, 0, 1, 1) both rw-view-out;
+}
+
+::view-transition-new(workbench-view) {
+  animation: 240ms cubic-bezier(0, 0, .2, 1) both rw-view-in;
+}
+
+@keyframes rw-view-out {
+  to { opacity: 0; transform: translateY(-6px); }
+}
+
+@keyframes rw-view-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(workbench-view),
+  ::view-transition-new(workbench-view) { animation: none; }
+}

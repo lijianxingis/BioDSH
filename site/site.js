@@ -12,6 +12,7 @@ style.textContent = styles
 document.head.appendChild(style)
 
 import { createDotField, countOnView } from './effects.js'
+import { createParallax } from './parallax.js'
 
 const api = createDemoApi()
 
@@ -19,6 +20,17 @@ const api = createDemoApi()
 // readable with it switched off.
 const canvas = document.getElementById('dot-field')
 if (canvas) createDotField(canvas, { spacing: 28, radius: 1.5, influenceRadius: 170 })
+
+// Layered parallax: each section moves at its own rate so the page has depth rather
+// than reading as a flat stack of blocks.
+createParallax([
+  { element: document.querySelector('.hero .lede'), speed: 0.35 },
+  { element: document.querySelector('.stage'), speed: -0.18 },
+  ...[...document.querySelectorAll('section.block')].map((element, index) => ({
+    element,
+    speed: index % 2 === 0 ? 0.12 : -0.1,
+  })),
+])
 
 // Numbers count up when they enter the viewport. The value is in the markup already, so
 // a reader without script still sees the number.

@@ -7641,17 +7641,21 @@ function DnaHelix({ events = [], height = 260, turns = 3.4, selected = null, onS
       const b = project(rung.t, phase + Math.PI, radius, width, innerHeight, turns);
       const depth = (a.z + b.z) / 2;
       const active = hoverRef.current === rung.index || selected === rung.index;
-      ctx.globalAlpha = active ? 1 : 0.35 + (depth + 1) / 2 * 0.65;
+      const nearness = (depth + 1) / 2;
+      const depthScale = 0.72 + nearness * 0.56;
+      ctx.globalAlpha = active ? 1 : 0.3 + nearness * 0.7;
       ctx.strokeStyle = rung.verified ? rung.colour : faint;
-      ctx.lineWidth = active ? 3 : 1.6;
+      ctx.lineWidth = active ? 3 : 0.9 + nearness * 1.5;
       ctx.beginPath();
       ctx.moveTo(a.x, a.y + pad);
       ctx.lineTo(b.x, b.y + pad);
       ctx.stroke();
       for (const point of [a, b]) {
-        const r = active ? 5.5 : 3.2 + (point.z + 1) / 2 * 1.8;
+        const pointNearness = (point.z + 1) / 2;
+        const r = active ? 5.5 : (2.6 + pointNearness * 2.4) * depthScale;
+        ctx.globalAlpha = active ? 1 : 0.35 + pointNearness * 0.65;
         ctx.beginPath();
-        ctx.arc(point.x, point.y + pad, r, 0, Math.PI * 2);
+        ctx.arc(point.x, point.y + pad, Math.max(1, r), 0, Math.PI * 2);
         ctx.fillStyle = rung.verified ? rung.colour : faint;
         ctx.fill();
         if (active) {
@@ -7665,16 +7669,18 @@ function DnaHelix({ events = [], height = 260, turns = 3.4, selected = null, onS
       ctx.globalAlpha = 1;
     };
     const strand = (basePhase, offset) => {
-      ctx.beginPath();
-      for (let i = 0; i <= 120; i++) {
-        const p = project(i / 120, basePhase + offset, radius, width, innerHeight, turns);
-        if (i === 0) ctx.moveTo(p.x, p.y + pad);
-        else ctx.lineTo(p.x, p.y + pad);
-      }
       ctx.strokeStyle = ink;
       ctx.lineWidth = 1;
-      ctx.globalAlpha = 0.35;
-      ctx.stroke();
+      for (let i = 0; i < 120; i++) {
+        const from = project(i / 120, basePhase + offset, radius, width, innerHeight, turns);
+        const to = project((i + 1) / 120, basePhase + offset, radius, width, innerHeight, turns);
+        const nearness = ((from.z + to.z) / 2 + 1) / 2;
+        ctx.globalAlpha = 0.16 + nearness * 0.4;
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y + pad);
+        ctx.lineTo(to.x, to.y + pad);
+        ctx.stroke();
+      }
       ctx.globalAlpha = 1;
     };
     strand(phaseRef.current, 0);
@@ -8513,6 +8519,32 @@ var styles_default = `/* Panel shell: navigation, body, and the placeholder used
   cursor: pointer;
 }
 
+
+/* ---------------------------------------------------------------- view transitions */
+
+/* The old view fades out while the new one fades in. Naming the element means the browser
+   animates the content rather than the whole page, so the nav does not flicker. */
+::view-transition-old(workbench-view) {
+  animation: 180ms cubic-bezier(.4, 0, 1, 1) both rw-view-out;
+}
+
+::view-transition-new(workbench-view) {
+  animation: 240ms cubic-bezier(0, 0, .2, 1) both rw-view-in;
+}
+
+@keyframes rw-view-out {
+  to { opacity: 0; transform: translateY(-6px); }
+}
+
+@keyframes rw-view-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(workbench-view),
+  ::view-transition-new(workbench-view) { animation: none; }
+}
+
 /* Workspace overview \u2014 styled to match the host application.
    Colours are sampled from the DSH UI: white surfaces, near-black text, 12px card radius,
    pill buttons, and the host's blue as the single accent. A dark variant keys off the
@@ -9151,6 +9183,52 @@ function countOnView(element, { duration = 900, format = (value) => String(value
   };
 }
 
+// site/parallax.js
+var SUPPORTS_NATIVE = typeof CSS !== "undefined" && CSS.supports?.("animation-timeline: view()") === true;
+function createParallax(layers, { enabled = true } = {}) {
+  if (!enabled || !layers.length) return { destroy() {
+  } };
+  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+  if (reduced) return { destroy() {
+  } };
+  if (SUPPORTS_NATIVE) {
+    for (const { element, speed } of layers) {
+      element.style.setProperty("--parallax-speed", String(speed));
+      element.classList.add("is-parallax-native");
+    }
+    return { destroy() {
+      for (const { element } of layers) element.classList.remove("is-parallax-native");
+    } };
+  }
+  let frame = 0;
+  let queued = false;
+  const apply = () => {
+    queued = false;
+    const viewportHeight = window.innerHeight;
+    for (const { element, speed } of layers) {
+      const rect = element.getBoundingClientRect();
+      const progress = (rect.top + rect.height / 2 - viewportHeight / 2) / viewportHeight;
+      const offset = -progress * speed * 60;
+      element.style.transform = "translate3d(0," + offset.toFixed(2) + "px,0)";
+    }
+  };
+  const onScroll = () => {
+    if (queued) return;
+    queued = true;
+    frame = requestAnimationFrame(apply);
+  };
+  apply();
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll, { passive: true });
+  return {
+    destroy() {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    }
+  };
+}
+
 // site/site.js
 var style = document.createElement("style");
 style.textContent = styles_default;
@@ -9158,6 +9236,14 @@ document.head.appendChild(style);
 var api = createDemoApi();
 var canvas = document.getElementById("dot-field");
 if (canvas) createDotField(canvas, { spacing: 28, radius: 1.5, influenceRadius: 170 });
+createParallax([
+  { element: document.querySelector(".hero .lede"), speed: 0.35 },
+  { element: document.querySelector(".stage"), speed: -0.18 },
+  ...[...document.querySelectorAll("section.block")].map((element, index) => ({
+    element,
+    speed: index % 2 === 0 ? 0.12 : -0.1
+  }))
+]);
 for (const element of document.querySelectorAll("[data-count]")) countOnView(element);
 (0, import_client.createRoot)(document.getElementById("app")).render(
   import_react6.default.createElement(WorkbenchHome, {

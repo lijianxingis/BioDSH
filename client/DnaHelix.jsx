@@ -77,17 +77,25 @@ export function DnaHelix({ events = [], height = 260, turns = 3.4, selected = nu
       const b = project(rung.t, phase + Math.PI, radius, width, innerHeight, turns)
       const depth = (a.z + b.z) / 2
       const active = hoverRef.current === rung.index || selected === rung.index
-      ctx.globalAlpha = active ? 1 : 0.35 + ((depth + 1) / 2) * 0.65
+      // z drives three things, not one: opacity, line weight and radius. Opacity alone
+      // reads as "faded"; the size difference is what makes it read as "nearer".
+      const nearness = (depth + 1) / 2
+      const depthScale = 0.72 + nearness * 0.56
+      ctx.globalAlpha = active ? 1 : 0.3 + nearness * 0.7
       ctx.strokeStyle = rung.verified ? rung.colour : faint
-      ctx.lineWidth = active ? 3 : 1.6
+      ctx.lineWidth = active ? 3 : 0.9 + nearness * 1.5
       ctx.beginPath()
       ctx.moveTo(a.x, a.y + pad)
       ctx.lineTo(b.x, b.y + pad)
       ctx.stroke()
       for (const point of [a, b]) {
-        const r = active ? 5.5 : 3.2 + ((point.z + 1) / 2) * 1.8
+        const pointNearness = (point.z + 1) / 2
+        // Points behind the axis are drawn smaller and slightly transparent, so the two
+        // strands separate visually instead of crossing flat.
+        const r = active ? 5.5 : (2.6 + pointNearness * 2.4) * depthScale
+        ctx.globalAlpha = active ? 1 : 0.35 + pointNearness * 0.65
         ctx.beginPath()
-        ctx.arc(point.x, point.y + pad, r, 0, Math.PI * 2)
+        ctx.arc(point.x, point.y + pad, Math.max(1, r), 0, Math.PI * 2)
         ctx.fillStyle = rung.verified ? rung.colour : faint
         ctx.fill()
         if (active) {
@@ -104,16 +112,20 @@ export function DnaHelix({ events = [], height = 260, turns = 3.4, selected = nu
     // The phase is passed in rather than read from the closure: it changes every frame,
     // and reading a stale value made the strands drift out of step with the rungs.
     const strand = (basePhase, offset) => {
-      ctx.beginPath()
-      for (let i = 0; i <= 120; i++) {
-        const p = project(i / 120, basePhase + offset, radius, width, innerHeight, turns)
-        if (i === 0) ctx.moveTo(p.x, p.y + pad)
-        else ctx.lineTo(p.x, p.y + pad)
-      }
+      // Draw the strand in short segments so each can carry its own depth. One path with
+      // one alpha would flatten the curve back out.
       ctx.strokeStyle = ink
       ctx.lineWidth = 1
-      ctx.globalAlpha = 0.35
-      ctx.stroke()
+      for (let i = 0; i < 120; i++) {
+        const from = project(i / 120, basePhase + offset, radius, width, innerHeight, turns)
+        const to = project((i + 1) / 120, basePhase + offset, radius, width, innerHeight, turns)
+        const nearness = ((from.z + to.z) / 2 + 1) / 2
+        ctx.globalAlpha = 0.16 + nearness * 0.4
+        ctx.beginPath()
+        ctx.moveTo(from.x, from.y + pad)
+        ctx.lineTo(to.x, to.y + pad)
+        ctx.stroke()
+      }
       ctx.globalAlpha = 1
     }
     strand(phaseRef.current, 0)
