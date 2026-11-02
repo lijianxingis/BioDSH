@@ -61,6 +61,10 @@ const USAGE = [
   '  verify <runId> --workspace D  re-verify a run audit chain',
   '  export <runId> --workspace D  write a signed bundle  [--out FILE] [--key FILE]',
   '  check <bundle.json>           verify a bundle that came from somewhere else',
+  '  report <runId> --workspace D  render a single-file HTML report',
+  '  graph <template>              print the plan as Graphviz DOT',
+  '  from-dsl <file.workflow>      run a workflow written in the YAML dialect',
+  '  completion [shell]            print a shell completion script',
   '  doctor                        report what this machine can and cannot do',
   '',
   'Workspace defaults to the current directory.',
@@ -279,7 +283,77 @@ async function cmdDoctor() {
   console.log('no reproducible builds, and no compliance certification.')
 }
 
-const commands = { init: cmdInit, templates: cmdTemplates, plan: cmdPlan, run: cmdRun, runs: cmdRuns, verify: cmdVerify, export: cmdExport, check: cmdCheck, doctor: cmdDoctor }
+async function cmdReport({ positional, flags }) {
+  const workspace = workspaceOf(flags)
+  const run = await loadRun(workspace, positional[0])
+  if (!run) return
+  const { renderHtmlReport } = await import('../lib/report-html.js')
+  const { verifyProvenance } = await import('../lib/provenance.js')
+  const html = renderHtmlReport({ run, plan: null, provenance: run.provenance, verified: verifyProvenance(run.provenance) })
+  const out = typeof flags.out === 'string' ? flags.out : join(workspace, STORE, 'runs', run.id, 'report.html')
+  await mkdir(dirname(out), { recursive: true })
+  await writeFile(out, html, 'utf8')
+  console.log('report: ' + out)
+  console.log('size  : ' + Math.round(Buffer.byteLength(html) / 1024) + ' KiB')
+}
+
+async function cmdGraph({ positional, flags }) {
+  const template = findTemplate(positional[0])
+  if (!template) return
+  const { toDot } = await import('../lib/graph.js')
+  const plan = planFromTemplate(template)
+  const dot = toDot(plan, { title: template.id })
+  if (typeof flags.out === 'string') { await writeFile(flags.out, dot, 'utf8'); console.log('graph written to ' + flags.out) }
+  else console.log(dot)
+}
+
+async function cmdFromDsl({ positional, flags }) {
+  const file = positional[0]
+  if (!file) { console.error('usage: dsh-research from-dsl <file.workflow>'); process.exitCode = 2; return }
+  const source = await readFile(file, 'utf8')
+  const { workflowFromDsl } = await import('../lib/dsl.js')
+  const workspace = workspaceOf(flags)
+  const plan = definePlan(workflowFromDsl(source))
+  const adapter = createFsAdapter({ workspace })
+  const session = await adapter.resolveSession('local')
+  const runId = new Date().toISOString().replace(/[:.]/g, '-') + '-dsl'
+  const runDirectory = join(workspace, STORE, 'executions', runId)
+  await mkdir(runDirectory, { recursive: true })
+  console.log('running ' + file + ' in ' + workspace)
+  const result = await runPlan(plan, { workspace, runDirectory })
+  console.log('status: ' + result.status)
+  for (const step of result.steps) {
+    console.log('  ' + step.id.padEnd(24) + step.status)
+    for (const artifact of step.outputs ?? []) console.log('    ' + artifact.path + '  ' + artifact.bytes + ' B  ' + artifact.sha256.slice(0, 16))
+  }
+  let provenance = createProvenance({ runId, sessionId: session.id, templateId: 'dsl', preset: 'standard', inputs: {}, now: new Date().toISOString() })
+  for (const step of result.steps) {
+    provenance = recordExecution(provenance, { stepId: step.id, tool: 'workflow-engine', stepFingerprint: step.fingerprint, exitCode: step.exitCode, status: step.status })
+    for (const artifact of step.outputs ?? []) {
+      provenance = recordArtifact(provenance, { path: artifact.path, label: artifact.path, bytes: artifact.bytes, version: 'v1', checksum: { algorithm: 'sha256', value: artifact.sha256 } })
+    }
+  }
+  await adapter.saveRun(session, {
+    schemaVersion: 2, id: runId, sessionId: session.id, templateId: 'dsl', title: file,
+    preset: 'standard', status: result.status, inputs: {},
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    steps: result.steps.map(step => ({ id: step.id, title: step.label, status: step.status, artifacts: (step.outputs ?? []).map(a => ({ path: a.path, bytes: a.bytes, sha256: a.sha256 })) })),
+    provenance,
+  })
+  console.log('run id     : ' + runId)
+  console.log('audit chain: ' + (verifyProvenance(provenance) ? 'verified' : 'BROKEN'))
+}
+
+async function cmdCompletion({ positional }) {
+  const { spawnSync } = await import('node:child_process')
+  const shell = positional[0] ?? 'bash'
+  const result = spawnSync(process.execPath, [join(HERE, 'dsh-research-completion.mjs'), shell], { encoding: 'utf8' })
+  process.stdout.write(result.stdout ?? '')
+  if (result.stderr) process.stderr.write(result.stderr)
+  process.exitCode = result.status ?? 0
+}
+
+const commands = { init: cmdInit, templates: cmdTemplates, plan: cmdPlan, run: cmdRun, runs: cmdRuns, verify: cmdVerify, export: cmdExport, check: cmdCheck, doctor: cmdDoctor, report: cmdReport, graph: cmdGraph, 'from-dsl': cmdFromDsl, completion: cmdCompletion }
 
 const argv = process.argv.slice(2)
 if (!argv.length || argv[0] === '--help' || argv[0] === '-h') { console.log(USAGE); process.exit(0) }

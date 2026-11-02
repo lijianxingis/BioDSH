@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>作业队列 — DSH 研究工作台</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; padding: 28px 24px 64px; font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans SC", sans-serif; color: #0f1115; background: #fff; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 22px; letter-spacing: -.02em; margin: 0 0 4px; }
+  .sub { color: #5b6270; font-size: 14px; margin: 0 0 22px; }
+  .counts { display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; }
+  .count { background: #f6f7f9; border-radius: 10px; padding: 10px 16px; min-width: 100px; }
+  .count b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+  .count span { font-size: 12px; color: #5b6270; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid #eceef2; }
+  th { font-size: 12.5px; font-weight: 500; color: #5b6270; }
+  .mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: #4b5563; }
+  .pill { font-size: 11.5px; padding: 1px 8px; border-radius: 999px; background: #eef0f3; color: #4b5563; }
+  .pill--running { background: #fef6e7; color: #8a5a00; }
+  .pill--queued { background: #eef3fe; color: #2f5fd0; }
+  .pill--finished { background: #e8f6f1; color: #0f7b5f; }
+  .pill--failed, .pill--cancelled { background: #fdecea; color: #c0392b; }
+  button { font: inherit; font-size: 13px; padding: 4px 12px; border: 0; border-radius: 999px; background: #f3f4f6; cursor: pointer; }
+  button:hover:not(:disabled) { background: #e8eaee; }
+  button:disabled { opacity: .45; cursor: default; }
+  .empty { color: #5b6270; font-size: 14px; padding: 18px 0; }
+  .error { background: #fdecea; color: #c0392b; padding: 10px 14px; border-radius: 10px; font-size: 14px; margin-bottom: 16px; }
+  .note { margin-top: 26px; font-size: 13px; color: #5b6270; }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #0f7b5f; margin-right: 6px; vertical-align: middle; }
+  .dot--stale { background: #c0392b; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>作业队列</h1>
+  <p class="sub"><span id="liveness" class="dot"></span><span id="status-line">连接中…</span></p>
+  <div id="error" class="error" hidden></div>
+
+  <div class="counts">
+    <div class="count"><b id="running">0</b><span>运行中</span></div>
+    <div class="count"><b id="queued">0</b><span>排队</span></div>
+    <div class="count"><b id="total">0</b><span>作业总数</span></div>
+  </div>
+
+  <table>
+    <thead><tr><th>作业</th><th>状态</th><th>标题</th><th></th></tr></thead>
+    <tbody id="rows"><tr><td colspan="4" class="empty">读取中…</td></tr></tbody>
+  </table>
+
+  <p class="note">
+    这个页面每 3 秒拉一次 <code>/api/queue</code>。它只显示你所在租户的作业——
+    服务端按租户过滤，而不是在这里筛。<br>
+    取消只在作业还没开始时有效；已经在跑的任务不会因为点这个按钮停下。
+  </p>
+</div>
+<script src="/api/queue/ui.js"></script>
+</body>
+</html>

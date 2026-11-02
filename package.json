@@ -26,7 +26,15 @@
     "./client": "./lib/client.js",
     "./package.json": "./package.json",
     "./adapter": "./lib/adapter.js",
-    "./fs-adapter": "./lib/fs-adapter.js"
+    "./fs-adapter": "./lib/fs-adapter.js",
+    "./dsl": "./lib/dsl.js",
+    "./executors": "./lib/executors.js",
+    "./graph": "./lib/graph.js",
+    "./metrics": "./lib/metrics.js",
+    "./auth": "./lib/auth.js",
+    "./tenancy": "./lib/tenancy.js",
+    "./checkpoint": "./lib/checkpoint.js",
+    "./environments": "./lib/environments.js"
   },
   "files": [
     "lib",
@@ -64,11 +72,13 @@
   },
   "scripts": {
     "build": "node build.mjs",
-    "test": "node --test --test-isolation=none lib/step-contract.test.js lib/workflow-engine.test.js lib/provenance.test.js lib/governance.test.js lib/host.test.js lib/image-qc.test.js lib/distributed.test.js lib/index.test.js client/workflow-templates.test.js client/views.test.mjs",
-    "verify": "node test/verify-goal.mjs && node test/verify-coverage.mjs && node test/verify-host-contract.mjs && node test/verify-bundle-path.mjs && node test/verify-distributed-identity.mjs && node test/verify-container-live.mjs && node test/verify-bioconductor.mjs && node test/verify-real-data.mjs && node test/verify-biomni.mjs && node test/verify-standalone.mjs",
+    "test": "node --test --test-isolation=none lib/step-contract.test.js lib/workflow-engine.test.js lib/provenance.test.js lib/governance.test.js lib/environments.test.js lib/host.test.js lib/image-qc.test.js lib/distributed.test.js lib/index.test.js client/workflow-templates.test.js client/views.test.mjs",
+    "verify": "node test/verify-goal.mjs && node test/verify-coverage.mjs && node test/verify-host-contract.mjs && node test/verify-bundle-path.mjs && node test/verify-distributed-identity.mjs && node test/verify-container-live.mjs && node test/verify-bioconductor.mjs && node test/verify-real-data.mjs && node test/verify-biomni.mjs && node test/verify-standalone.mjs && node test/verify-capabilities.mjs && node test/verify-api.mjs",
     "verify:container": "node test/verify-container-live.mjs",
     "build:site": "node site/build-site.mjs",
-    "serve:site": "node site/serve.mjs"
+    "serve:site": "node site/serve.mjs",
+    "serve:api": "node bin/dsh-research-server.mjs",
+    "completion": "node bin/dsh-research-completion.mjs"
   },
   "dependencies": {
     "@deepseek-ai/dsh-tools": "0.2.1-rc.2"
@@ -92,7 +102,8 @@
     "@deepseek-ai/cordis": "~4.0.5"
   },
   "bin": {
-    "dsh-research": "./bin/dsh-research.mjs"
+    "dsh-research": "./bin/dsh-research.mjs",
+    "dsh-research-server": "./bin/dsh-research-server.mjs"
   },
   "engines": {
     "node": ">=20"
