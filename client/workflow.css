@@ -5,3 +5,147 @@
 .rw-workflow-step { padding: 12px 14px; border-radius: 8px; background: #f3f4f6; }
 .rw-workflow-step-title { font-size: 14px; font-weight: 600; }
 .rw-workflow-step-body { font-size: 13px; color: #4b5563; margin-top: 4px; }
+
+
+/* ---------------------------------------------------------------- workflow panel */
+
+.rw-workflow { display: flex; flex-direction: column; gap: 22px; padding: 16px 20px 40px; width: 100%; min-width: 0; }
+
+.rw-wf-block { display: flex; flex-direction: column; gap: 12px; }
+
+.rw-wf-create { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+.rw-wf-create select {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 0;
+  background: #f3f4f6;
+  color: inherit;
+  min-width: 200px;
+}
+
+.rw-wf-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.rw-wf-notice { margin: 0; font-size: 14px; padding: 8px 12px; border-radius: 8px; }
+.rw-wf-notice--ok { background: #e8f6f1; color: #0f7b5f; }
+.rw-wf-notice--bad { background: #fdecea; color: #c0392b; }
+
+.rw-steps { display: flex; flex-direction: column; gap: 8px; }
+
+.rw-step { display: grid; grid-template-columns: 14px 1fr; gap: 12px; padding: 12px 14px; border-radius: 8px; background: #f6f7f9; }
+.rw-step-main { min-width: 0; }
+.rw-step-title { font-size: 14px; font-weight: 500; }
+.rw-step-meta { font-size: 13px; color: #5b6270; margin-top: 2px; }
+
+.rw-step-artifacts { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.rw-step-artifacts li { display: flex; gap: 8px; align-items: baseline; font-size: 12px; color: #5b6270; }
+.rw-step-artifacts code { font-family: ui-monospace; font-size: 12px; background: #eef0f3; padding: 1px 6px; border-radius: 4px; }
+
+.rw-hash { font-family: ui-monospace; font-size: 11px; color: #9aa2b1; }
+
+.rw-evidence { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 8px; background: #f6f7f9; }
+.rw-evidence-row { display: flex; justify-content: space-between; font-size: 13px; }
+.rw-evidence-artifact { display: flex; gap: 8px; font-size: 12px; color: #5b6270; }
+
+.rw-decision { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding-top: 4px; }
+.rw-decision-label { font-size: 14px; color: #5b6270; }
+
+/* ---------------------------------------------------------------- editor */
+
+.rw-editor { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 40px; width: 100%; min-width: 0; }
+
+.rw-editor-bar { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.rw-editor-bar input {
+  flex: 1;
+  min-width: 220px;
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 0;
+  background: #f3f4f6;
+  color: inherit;
+}
+
+.rw-editor-area {
+  width: 100%;
+  min-height: 320px;
+  font-family: ui-monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 14px;
+  border-radius: 8px;
+  border: 0;
+  background: #f6f7f9;
+  color: inherit;
+  resize: vertical;
+}
+
+/* ---------------------------------------------------------------- command palette */
+
+.rw-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 17, 21, .28);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+  z-index: 60;
+}
+
+.rw-palette {
+  width: min(560px, 92vw);
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .24);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.rw-palette-input {
+  font: inherit;
+  font-size: 15px;
+  padding: 14px 16px;
+  border: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, .08);
+  outline: none;
+}
+
+.rw-palette-list { max-height: 320px; overflow: auto; padding: 6px; }
+
+.rw-palette-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 14px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.rw-palette-item.is-active { background: #eef3fe; color: #2f5fd0; }
+.rw-palette-hint { color: #9aa2b1; font-size: 12px; }
+.rw-palette-empty { margin: 0; padding: 14px 16px; color: #5b6270; font-size: 14px; }
+
+.rw-nav-kbd {
+  margin-left: auto;
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #5b6270;
+  cursor: pointer;
+}
