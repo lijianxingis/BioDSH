@@ -45,4 +45,14 @@ if (result.status !== 0) process.exit(result.status || 1)
 const bundle = await readFile(new URL('.build/client.cjs', import.meta.url), 'utf8')
 const code = `window.__ModuleLoader__.load({id:"dsh-research-workbench",factory:(require)=>{var module={exports:{}};var exports=module.exports;\n${bundle}\nreturn module.exports;}});\n`
 await writeFile(new URL('lib/client.js', import.meta.url), code, 'utf8')
+// Report which analysis scripts the templates depend on, so a missing one is visible at
+// build time rather than at run time.
+const scriptDir = new URL('scripts/', import.meta.url)
+const scriptNames = await readdir(scriptDir).catch(() => [])
+const referenced = ['differential_expression.R', 'profile_tables.py', 'inspect_sequences.py', 'summarize_sequences.py']
+const absent = referenced.filter(name => !scriptNames.includes(name))
+if (absent.length) {
+  console.error('WARNING: templates reference scripts that are not shipped: ' + absent.join(', '))
+}
+
 console.log(`Built dsh-research-workbench client: ${Math.round(Buffer.byteLength(code) / 1024)} KiB`)

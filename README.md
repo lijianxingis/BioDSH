@@ -16,10 +16,15 @@
 
 这个插件把「执行」和「证据」绑在一起：每一步由宿主真实执行、产物按字节哈希登记、审计链可离线自校验。**它不替你判断生物学结论对不对**。
 
-## 容器执行是真的
+## 容器执行是真的，而且答案可以对
 
-一个声明为容器的计划**真的在容器里跑**。用 r-base 4.3.3 验证过：网络关闭、
-镜像按 digest 钉死，R 在容器内拟合线性模型并从生成数据里恢复了 +2.4 的组效应。
+一个声明为容器的计划**真的在容器里跑**。验证过两条：
+
+- **r-base 4.3.3**：R 在无网络容器里拟合线性模型，从生成数据恢复了 +2.4 的组效应
+- **Bioconductor（limma 3.58.1 / edgeR 4.0.16）**：差异表达在 200 基因 × 8 样本上
+  跑出 **20/20 真阳性、0 假阳性**——因为数据带有已知的真值集合，可以算 recall 和 precision
+
+第二条是关键：**它证明了结果正确，而不只是流程跑通。**
 
 这个功能曾经是假的——见 [docs/real-analysis-run-3.md](docs/real-analysis-run-3.md)。
 引擎接受 `backend: "container"`，校验 digest，探测 daemon，然后**在宿主上执行**。
@@ -50,7 +55,7 @@ npm install --ignore-scripts && npm run build && npm test
 | 无临床验证 | `clinicalValidationStatus` 恒为 `required-not-performed` |
 | 非字节级可复现 | `reproducible: false` 是硬编码常量 |
 | 无真实使用史 | 测试都是维护者自测 |
-| 容器验证范围有限 | 用 r-base 4.3.3 跑过真实的线性模型拟合；未验证多包 Bioconductor 镜像 |
+| 容器未验证重负载 | 跑过 limma/edgeR 差异表达；未验证 GPU、超长任务、大内存 |
 | 无分布式调度器 | 有 HTTP worker 池，没有 K8s/Slurm 集成 |
 
 ## 许可

@@ -1,0 +1,10 @@
+# A real Bioconductor toolchain: limma and edgeR for differential expression.
+FROM docker.m.daocloud.io/library/r-base:4.3.3
+
+RUN R --slave -e "options(repos = c(CRAN = 'https://cloud.r-project.org', BioCsoft = 'https://bioconductor.org/packages/3.18/bioc', BioCann = 'https://bioconductor.org/packages/3.18/data/annotation')); install.packages('BiocManager', quiet = TRUE); BiocManager::install(c('limma', 'edgeR'), ask = FALSE, update = FALSE, quiet = TRUE)"
+
+COPY check-bioc.R /opt/check-bioc.R
+RUN Rscript /opt/check-bioc.R
+
+LABEL org.opencontainers.image.description="R + Bioconductor limma/edgeR, research use only"
+LABEL research.intended-use="research-only"

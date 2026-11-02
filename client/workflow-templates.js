@@ -115,6 +115,34 @@ const containerAnalysis = {
   ],
 }
 
+const bioconductorDE = {
+  id: 'bioconductor-de',
+  badge: '容器',
+  title: 'Bioconductor 差异表达',
+  description: '在钉死 digest 的 limma/edgeR 镜像中做差异表达，网络关闭，结果可与真值对照。',
+  preset: 'biomni',
+  backend: 'container',
+  image: 'dsh-bioc@sha256:cb4d683b14e68c6986a14f7809094a3224f764796fa22d9854e440c226cf30b5',
+  steps: [
+    step('inspect-inputs', '检查输入矩阵', '在容器内确认计数矩阵的表头与样本数。', {
+      command: 'head -n 1 counts.csv',
+      inputs: [{ path: 'counts.csv', required: true }, { path: 'samples.csv', required: true }],
+      timeoutMs: 60000,
+    }),
+    step('differential-expression', 'limma 差异表达', 'TMM 归一化、voom、eBayes，写出排序结果与摘要。', {
+      command: 'Rscript differential_expression.R counts.csv samples.csv de-results.csv de-summary.json',
+      argv: ['Rscript', 'differential_expression.R', 'counts.csv', 'samples.csv', 'de-results.csv', 'de-summary.json'],
+      needs: ['inspect-inputs'],
+      inputs: [{ path: 'counts.csv', required: true }, { path: 'samples.csv', required: true }],
+      outputs: [
+        { path: 'de-results.csv', minBytes: 1000 },
+        { path: 'de-summary.json', mediaType: 'application/json', minBytes: 100 },
+      ],
+      timeoutMs: 300000,
+    }),
+  ],
+}
+
 const custom = {
   id: 'custom',
   badge: '自定义',
@@ -128,6 +156,7 @@ export const WORKFLOW_TEMPLATES = Object.freeze([
   sequenceAnalysis,
   localDataAnalysis,
   literatureEvidence,
+  bioconductorDE,
   containerAnalysis,
   medicalMetadata,
   custom,
