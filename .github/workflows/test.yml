@@ -1,0 +1,77 @@
+# Verify on every push. The verification scripts are the point: they check the
+# installed package end to end, which is the failure mode a unit test cannot catch
+# (a manifest that resolves to nothing, an export that names a missing file).
+name: test
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      # --ignore-scripts: this package ships a prebuilt client, so nothing has to run at
+      # install time, and skipping lifecycle scripts removes a supply-chain surface.
+      - run: npm ci --ignore-scripts || npm install --ignore-scripts
+
+      - name: Build the client
+        run: npm run build
+
+      - name: Unit tests
+        run: npm test
+
+      - name: The built bundle must be current
+        run: |
+          # If the committed bundle is stale, a fresh checkout behaves differently from
+          # the machine it was built on.
+          git diff --exit-code --stat lib/client.js
+
+      - name: Verify the package ships what it promises
+        run: node test/verify-coverage.mjs
+
+      - name: Verify the goals hold
+        run: node test/verify-goal.mjs
+
+      - name: Verify the host contract
+        run: node test/verify-host-contract.mjs
+
+      - name: Verify the evidence path
+        run: node test/verify-bundle-path.mjs
+
+      - name: Verify distributed execution and identity
+        run: node test/verify-distributed-identity.mjs
+
+      # No daemon on a hosted runner by default, so this reports the specification checks
+      # and skips the live ones. Skipping because the runtime is absent is honest.
+      - name: Verify the container specification
+        run: node test/verify-container-live.mjs
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts
+      - run: npm run build
+      - run: npm test
+      # The scripts are the reason this matrix exists: path handling on Windows is where
+      # this project has broken before.
+      - run: node test/verify-goal.mjs
+      - run: node test/verify-coverage.mjs
