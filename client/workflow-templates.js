@@ -143,6 +143,34 @@ const bioconductorDE = {
   ],
 }
 
+const timeCourse = {
+  id: 'time-course-periodicity',
+  badge: '时间序列',
+  title: '时间序列周期分析',
+  description: '对每个时间点单样本的表达谱做周期拟合。不假装有重复，也不做组间比较。',
+  preset: 'biomni',
+  backend: 'container',
+  image: 'dsh-bioc@sha256:cb4d683b14e68c6986a14f7809094a3224f764796fa22d9854e440c226cf30b5',
+  steps: [
+    step('parse-matrix', '解析表达矩阵', '把 GEO series matrix 转成 CSV，并报告缺失值比例。', {
+      command: 'head -n 1 expression.csv',
+      inputs: [{ path: 'expression.csv', required: true }],
+      timeoutMs: 120000,
+    }),
+    step('periodicity', '周期拟合', '正弦拟合 + F 检验 + BH 校正，周期从时间轴推导。', {
+      command: 'Rscript periodicity_analysis.R expression.csv samples.csv periodic-genes.csv periodicity-summary.json',
+      argv: ['Rscript', 'periodicity_analysis.R', 'expression.csv', 'samples.csv', 'periodic-genes.csv', 'periodicity-summary.json'],
+      needs: ['parse-matrix'],
+      inputs: [{ path: 'expression.csv', required: true }, { path: 'samples.csv', required: true }],
+      outputs: [
+        { path: 'periodic-genes.csv', minBytes: 1000 },
+        { path: 'periodicity-summary.json', mediaType: 'application/json', minBytes: 100 },
+      ],
+      timeoutMs: 600000,
+    }),
+  ],
+}
+
 const custom = {
   id: 'custom',
   badge: '自定义',
@@ -157,6 +185,7 @@ export const WORKFLOW_TEMPLATES = Object.freeze([
   localDataAnalysis,
   literatureEvidence,
   bioconductorDE,
+  timeCourse,
   containerAnalysis,
   medicalMetadata,
   custom,
