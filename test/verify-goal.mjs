@@ -9,7 +9,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { definePlan, runPlan } from "../lib/workflow-engine.js"
 import { createProvenance, recordArtifact, verifyProvenance } from "../lib/provenance.js"
-import { createBundle, verifyBundle } from "../lib/bundle.js"
+import { createBundle, signBundle, verifyBundle } from "../lib/bundle.js"
 import { generateSigningKey, signDigest } from "../lib/signing.js"
 import { createReport } from "./harness.mjs"
 
@@ -72,16 +72,17 @@ try {
   // Goal: a signature travels with the bundle, and trust is a separate verdict.
   const key = generateSigningKey()
   const run = { id: "g", templateId: "t", title: "t", preset: "research", status: "completed", createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:01Z", inputs: {}, steps: [], provenance }
-  const unsigned = createBundle({ run, exportedAt: "2026-01-01T00:00:00Z", environment: { pluginVersion: "0.1.0" } })
-  const signature = { ...signDigest(unsigned.bundle.integrity.bundleSha256, key.privateKey), keyId: key.keyId }
-  const signed = createBundle({ run, exportedAt: unsigned.bundle.exportedAt, environment: unsigned.bundle.environment, signature })
-  const withKey = { ...signed.bundle, environment: { ...signed.bundle.environment, publicKey: key.publicKey } }
-  report.check("signature-verifies", verifyBundle(withKey, {}).signatureStatus === "valid")
-  report.check("valid-signature-is-not-authenticated", verifyBundle(withKey, { trustedKeys: [] }).authenticated === false)
-  report.check("authenticated-only-with-trusted-key", verifyBundle(withKey, { trustedKeys: [key.keyId] }).authenticated === true)
+  // The public key travels inside the bundle, so it is present before sealing.
+  const { bundle: keyed } = createBundle({ run, exportedAt: "2026-01-01T00:00:00Z", environment: { pluginVersion: "0.1.0", publicKey: key.publicKey } })
+  const signed = signBundle(keyed, key.privateKey, key.keyId)
+  report.check("signature-verifies", verifyBundle(signed, {}).signatureStatus === "valid")
+  report.check("valid-signature-is-not-authenticated", verifyBundle(signed, { trustedKeys: [] }).authenticated === false)
+  report.check("authenticated-only-with-trusted-key", verifyBundle(signed, { trustedKeys: [key.keyId] }).authenticated === true)
+  const edited = { ...signed, run: { ...signed.run, title: "changed" } }
+  report.check("edited-after-signing-is-detected", verifyBundle(edited, { trustedKeys: [key.keyId] }).authenticated === false)
 
   // Goal: every report states the clinical position.
-  report.check("bundle-refuses-clinical-use", JSON.stringify(signed.bundle).includes("research-only"))
+  report.check("bundle-refuses-clinical-use", JSON.stringify(signed).includes("research-only"))
 } finally {
   await rm(workspace, { recursive: true, force: true }).catch(() => {})
 }
