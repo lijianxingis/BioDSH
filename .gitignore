@@ -24,3 +24,7 @@ node_modules/
 Thumbs.db
 .vscode/
 .idea/
+
+# local server logs
+site/.server.log
+site/.server.err
