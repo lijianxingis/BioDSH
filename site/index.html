@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='#2f5fd0'/><path d='M9 6c0 6 14 6 14 12S9 24 9 26' stroke='#fff' stroke-width='2.2' fill='none' stroke-linecap='round'/><path d='M23 6c0 6-14 6-14 12s14 6 14 8' stroke='#fff' stroke-width='2.2' fill='none' stroke-linecap='round' opacity='.55'/><line x1='10' y1='12' x2='22' y2='12' stroke='#fff' stroke-width='1.6' opacity='.8'/><line x1='10' y1='18' x2='22' y2='18' stroke='#fff' stroke-width='1.6' opacity='.8'/></svg>">
+<title>DSH 研究工作台 — 界面展示</title>
+<meta name="description" content="研究工作台的界面：每一步由宿主真实执行，产物按字节哈希登记。">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+    color: #0f1115;
+    background: #ffffff;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: #2f5fd0; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+
+  /* The header is deliberately plain: this page exists so the panel can be judged, and a
+     decorative header would compete with it. */
+  header { border-bottom: 1px solid rgba(0,0,0,.08); }
+  header .wrap { display: flex; align-items: baseline; gap: 16px; padding-top: 20px; padding-bottom: 20px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+  header .note { margin: 0; color: #5b6270; font-size: 14px; }
+  header nav { margin-left: auto; display: flex; gap: 18px; font-size: 14px; }
+  header nav a { color: #5b6270; text-decoration: none; }
+  header nav a:hover { color: #0f1115; }
+
+  .lede { padding: 64px 0 40px; }
+  .lede h2 {
+    margin: 0;
+    font-size: clamp(2.1rem, 1.1rem + 4vw, 3.6rem);
+    line-height: 1.08;
+    letter-spacing: -.025em;
+    font-weight: 600;
+    max-width: 20ch;
+  }
+  .lede p { margin: 18px 0 0; font-size: 17px; color: #4b5563; max-width: 60ch; }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 22px; }
+  .badge { font-size: 13px; padding: 4px 11px; border-radius: 999px; background: #f3f4f6; color: #4b5563; }
+  .badge--warn { background: #fef6e7; color: #8a5a00; }
+
+  /* The panel is shown at its real size inside a frame that imitates an application
+     window, because a full-bleed screenshot would hide the fact that it is a panel. */
+  .stage { padding-bottom: 72px; }
+  .frame {
+    border-radius: 14px;
+    background: #f6f7f9;
+    padding: 10px;
+    box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 24px 60px -32px rgba(15,17,21,.28);
+  }
+  .frame-bar { display: flex; align-items: center; gap: 8px; padding: 4px 8px 12px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #d5d9e0; }
+  .frame-title { margin-left: 8px; font-size: 12.5px; color: #6b7280; }
+  .frame-body {
+    background: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    /* The workflow view scrolls its own column; a fixed height gave it a second
+       scrollbar on short screens. */
+    height: 680px;
+  }
+  #app { width: 100%; display: flex; min-width: 0; }
+
+  section.block { padding: 12px 0 64px; }
+  section.block > .wrap > h3 { margin: 0 0 6px; font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+  section.block > .wrap > p.sub { margin: 0 0 26px; color: #5b6270; font-size: 15px; max-width: 62ch; }
+  section.block + section.block { border-top: 1px solid rgba(0,0,0,.07); padding-top: 56px; }
+
+  .grid { display: grid; gap: 16px; }
+  .grid.two { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .grid.three { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .card { padding: 18px 20px; border-radius: 12px; background: #f6f7f9; }
+  .card h4 { margin: 0 0 6px; font-size: 15px; font-weight: 600; }
+  .card p { margin: 0; font-size: 14px; color: #5b6270; }
+  .card .num { font-size: 26px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .card .label { font-size: 13px; color: #5b6270; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid rgba(0,0,0,.07); }
+  th { font-weight: 500; color: #5b6270; font-size: 13px; }
+  td.mono { font-size: 12.5px; color: #4b5563; }
+
+  pre {
+    margin: 0; padding: 16px 18px; border-radius: 10px; background: #0f1115; color: #e6e9ee;
+    font-size: 13px; line-height: 1.65; overflow-x: auto;
+  }
+  pre .c { color: #7c8798; }
+  pre .g { color: #6fcf97; }
+  pre .y { color: #e0b341; }
+
+  footer { border-top: 1px solid rgba(0,0,0,.08); padding: 32px 0 56px; color: #5b6270; font-size: 14px; }
+  footer p { margin: 0 0 8px; }
+
+  @media (max-width: 720px) {
+    .wrap { padding: 0 18px; }
+    .frame-body { min-height: 520px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>DSH 研究工作台</h1>
+    <p class="note">界面展示 · 用真实组件驱动</p>
+    <nav>
+      <a href="#panel">面板</a>
+      <a href="#workflow">工作流</a>
+      <a href="#numbers">数字</a>
+      <a href="https://github.com/lijianxingis/BioDSH">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap lede">
+    <h2>软件最有说服力的时候，它在眼前干活。</h2>
+    <p>
+      下面是工作台自己的界面，不是效果图。同一套组件既跑在 DSH 内部，也跑在这个页面上——
+      换掉的只是传输层。数据来自真实运行记录：产物名、字节数、哈希前缀都对得上。
+    </p>
+    <div class="badges">
+      <span class="badge">真实组件</span>
+      <span class="badge">纯 Node 引擎</span>
+      <span class="badge">产物按字节登记</span>
+      <span class="badge badge--warn">研究用途 · 未做临床验证</span>
+    </div>
+  </div>
+
+  <div class="wrap stage" id="panel">
+    <div class="frame">
+      <div class="frame-bar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="frame-title">研究工作台 — 概览</span>
+      </div>
+      <div class="frame-body"><div id="app"></div></div>
+    </div>
+  </div>
+
+  <section class="block" id="workflow">
+    <div class="wrap">
+      <h3>研究工作流</h3>
+      <p class="sub">同一个面板的另一个视图。左侧是模板，右侧是每次运行的步骤、产物字节数与哈希。</p>
+      <div class="frame">
+        <div class="frame-bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="frame-title">研究工作流 — 运行详情</span>
+        </div>
+        <div class="frame-body"><div id="workflow-app"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <h3>三件事不做</h3>
+      <p class="sub">界面上不出现，是因为它们根本不存在。写着「研究用途」而不是「已认证」是有意的。</p>
+      <div class="grid three">
+        <div class="card">
+          <h4>不声称可复现</h4>
+          <p><code>reproducible</code> 恒为 <code>false</code>。容器钉死工具链，没钉死算法。</p>
+        </div>
+        <div class="card">
+          <h4>不声称已认证</h4>
+          <p>没有账号体系。签名是自签的，能证明持有某把密钥，不能证明是谁。</p>
+        </div>
+        <div class="card">
+          <h4>不声称临床可用</h4>
+          <p><code>clinicalValidationStatus</code> 恒为 <code>required-not-performed</code>。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="numbers">
+    <div class="wrap">
+      <h3>数字</h3>
+      <p class="sub">每一项都能用 <code>npm run verify</code> 复跑。跑不过就不该信这句话。</p>
+      <div class="grid three" style="margin-bottom: 28px">
+        <div class="card"><div class="num">95</div><div class="label">单元测试</div></div>
+        <div class="card"><div class="num">151</div><div class="label">验证检查</div></div>
+        <div class="card"><div class="num">11</div><div class="label">验证脚本</div></div>
+      </div>
+
+      <table>
+        <thead><tr><th>真实运行</th><th>数据</th><th>验证方式</th><th>结论</th></tr></thead>
+        <tbody>
+          <tr><td>DepMap CRISPR</td><td>430 MB · 17,916 基因</td><td>泛必需性闸门</td><td>候选在泛必需集之外</td></tr>
+          <tr><td>DDInter 相互作用</td><td>65,389 对 · 1,699 药</td><td>独立重新计数</td><td>前三名一致</td></tr>
+          <tr><td>r-base 线性模型</td><td>60 样本 · 3 组</td><td>系数对照真值</td><td>+2.2 vs 真值 +2.4</td></tr>
+          <tr><td>Bioconductor limma</td><td>200 基因 × 8 样本</td><td>recall / precision</td><td>20/20，0 假阳性</td></tr>
+          <tr><td>GEO GSE3635</td><td>6,227 探针 × 13 时间点</td><td>已知细胞周期基因</td><td>富集 15.6×</td></tr>
+        </tbody>
+      </table>
+      <p class="sub" style="margin-top: 18px">
+        最后一项的检验集是看到结果之后选的，有循环论证风险。这一点写在
+        <a href="https://github.com/lijianxingis/BioDSH/blob/main/docs/real-analysis-run-5.md">docs/real-analysis-run-5.md</a> 里。
+      </p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <h3>装上就能跑</h3>
+      <p class="sub">引擎是纯 Node，零外部依赖。不装 DSH 也能用。</p>
+<pre><span class="c"># 不需要 DSH</span>
+git clone https://github.com/lijianxingis/BioDSH.git &amp;&amp; cd BioDSH
+npm install --ignore-scripts
+
+node bin/dsh-research.mjs doctor        <span class="c"># 这台机器能干什么</span>
+node bin/dsh-research.mjs init ./work
+node bin/dsh-research.mjs run sequence-analysis --workspace ./work
+node bin/dsh-research.mjs verify &lt;runId&gt; --workspace ./work
+node bin/dsh-research.mjs export &lt;runId&gt; --workspace ./work
+
+<span class="g">status     : completed</span>
+<span class="g">  sequence-summary.json  111 B  1917fe519f3d76cf</span>
+<span class="g">audit chain: verified</span></pre>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><strong>这是研究原型，不是临床工具。</strong>没有合规认证，没有真实用户，没有临床验证。</p>
+    <p>MIT 许可 · <a href="https://github.com/lijianxingis/BioDSH">github.com/lijianxingis/BioDSH</a></p>
+  </div>
+</footer>
+
+<!-- The bundle, not site.js: the source uses bare imports that a browser cannot resolve. -->
+<!-- Served at "/", so a relative src would resolve to /site.bundle.js. Absolute path. -->
+<script type="module" src="/site/site.bundle.js"></script>
+</body>
+</html>
