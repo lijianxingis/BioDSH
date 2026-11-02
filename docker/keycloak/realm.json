@@ -1,0 +1,107 @@
+{
+  "realm": "dsh",
+  "enabled": true,
+  "displayName": "DSH Research Workbench",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "clients": [
+    {
+      "clientId": "dsh-workbench",
+      "name": "DSH Research Workbench API",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "local-test-secret-not-for-production",
+      "serviceAccountsEnabled": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://127.0.0.1:4174/*"
+      ],
+      "webOrigins": [
+        "http://127.0.0.1:4174"
+      ],
+      "attributes": {
+        "access.token.lifespan": "300"
+      },
+      "protocolMappers": [
+        {
+          "name": "tenant",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "tenant",
+            "claim.name": "tenant",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "role",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "role",
+            "claim.name": "role",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "researcher",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Re",
+      "lastName": "Searcher",
+      "email": "researcher@example.invalid",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "research-pass-123",
+          "temporary": false
+        }
+      ],
+      "attributes": {
+        "tenant": [
+          "acme"
+        ],
+        "role": [
+          "operator"
+        ]
+      }
+    },
+    {
+      "username": "outsider",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "outsider@example.invalid",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "outsider-pass-123",
+          "temporary": false
+        }
+      ],
+      "firstName": "Test",
+      "lastName": "User",
+      "attributes": {
+        "tenant": [
+          "globex"
+        ],
+        "role": [
+          "operator"
+        ]
+      }
+    }
+  ]
+}
