@@ -35,6 +35,16 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      # The suite must run on every supported Node version. --test-isolation=none is a
+      # Node 24 flag; using it made every job fail before a single test ran, while passing
+      # locally on 24.
+      - name: The suite must not depend on a flag a supported Node lacks
+        run: |
+          if grep -q "test-isolation" package.json; then
+            echo "package.json uses --test-isolation, which Node 20 and 22 reject"
+            exit 1
+          fi
+
       - name: The built bundle must be current
         run: |
           # If the committed bundle is stale, a fresh checkout behaves differently from
@@ -56,10 +66,15 @@ jobs:
       - name: Verify distributed execution and identity
         run: node test/verify-distributed-identity.mjs
 
-      # No daemon on a hosted runner by default, so this reports the specification checks
-      # and skips the live ones. Skipping because the runtime is absent is honest.
+      # These report their specification checks and skip the live ones when the runtime is
+      # absent. A hosted runner has no Docker daemon, no Slurm controller and no identity
+      # provider, so the live halves skip - which is the honest outcome, not a pass.
       - name: Verify the container specification
         run: node test/verify-container-live.mjs
+      - name: Verify the site renders under both deployment layouts
+        run: node test/verify-site-layouts.mjs
+      - name: Verify the tutorial commands still work
+        run: node test/verify-tutorial.mjs
 
   windows:
     runs-on: windows-latest

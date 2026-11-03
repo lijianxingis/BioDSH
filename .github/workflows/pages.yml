@@ -3,6 +3,9 @@
 # site/ is a static directory with no build step, but the page expects to sit next to its
 # bundle - which it does, because the bundle lives in site/ too. The only thing that has to
 # be true is that the document and the bundle are published together.
+# Requires Pages to be enabled in the repository settings (Settings > Pages >
+# Source: GitHub Actions). A workflow cannot enable it: configure-pages fails with
+# "Get Pages site failed" until that switch is on.
 name: pages
 
 on:
