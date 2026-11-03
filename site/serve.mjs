@@ -7,7 +7,7 @@
  */
 import { createServer } from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
-import { extname, join, normalize, resolve } from 'node:path'
+import { extname, sep, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..')
@@ -27,12 +27,34 @@ const TYPES = {
 }
 
 const server = createServer(async (request, response) => {
-  const url = new URL(request.url ?? '/', 'http://' + host)
-  const pathname = url.pathname === '/' ? '/site/index.html' : url.pathname
-  // normalize + prefix check: a request for ../../etc/passwd must not escape the project.
-  const target = resolve(join(root, normalize(pathname)))
-  if (!target.startsWith(root)) {
-    response.writeHead(403).end('forbidden')
+  // Read the raw request target, not url.pathname: the URL constructor collapses '..'
+  // while parsing, so a traversal never appears in url.pathname at all. That was why the
+  // guard looked correct and did nothing.
+  const rawTarget = String(request.url ?? '/').split('?')[0].split('#')[0]
+  let decoded
+  try {
+    decoded = decodeURIComponent(rawTarget)
+  } catch {
+    response.writeHead(400).end('bad request')
+    return
+  }
+  // Refuse anything that still contains a parent reference after decoding. Belt and braces:
+  // the resolve/prefix check below would also catch it, but rejecting early makes the
+  // intent explicit and keeps the error the same for every spelling.
+  if (decoded.split(/[\\/]/).includes('..')) {
+    response.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' }).end('forbidden')
+    return
+  }
+  const pathname = decoded === '/' ? '/site/index.html' : decoded
+
+  // Resolve against the project root WITHOUT normalising first: join(root, normalize(p))
+  // collapses '..' before the check can see it, which made /../package.json readable.
+  // The guard must run on the path as resolved, then compare with a separator so that
+  // '/repo-evil' does not pass for root '/repo'.
+  const target = resolve(root, '.' + pathname)
+  const inside = target === root || target.startsWith(root + sep)
+  if (!inside) {
+    response.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' }).end('forbidden')
     return
   }
   try {
