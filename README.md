@@ -16,6 +16,17 @@
 
 这个插件把「执行」和「证据」绑在一起：每一步由宿主真实执行、产物按字节哈希登记、审计链可离线自校验。**它不替你判断生物学结论对不对**。
 
+## 先看教程
+
+**[docs/tutorial.md](docs/tutorial.md)** —— 从零到一个带签名的证据包，十步。
+每一步都在这台机器上真跑过，输出是复制的不是写的。
+
+```bash
+git clone https://github.com/lijianxingis/BioDSH.git && cd BioDSH
+npm install --ignore-scripts
+node bin/dsh-research.mjs doctor
+```
+
 ## 装完就能用，不一定要 DSH
 
 引擎是纯 Node，**零外部依赖**。23 个模块里只有 `host.js` 用到了 DSH。

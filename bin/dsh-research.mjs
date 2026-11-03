@@ -289,7 +289,17 @@ async function cmdReport({ positional, flags }) {
   if (!run) return
   const { renderHtmlReport } = await import('../lib/report-html.js')
   const { verifyProvenance } = await import('../lib/provenance.js')
-  const html = renderHtmlReport({ run, plan: null, provenance: run.provenance, verified: verifyProvenance(run.provenance) })
+  // The run record carries enough to draw the graph; passing null produced a report with
+  // no picture of the workflow, which is the part a reader looks at first.
+  const graphPlan = {
+    steps: (run.steps ?? []).map(step => ({
+      id: step.id,
+      label: step.title ?? step.id,
+      needs: step.needs ?? [],
+      contract: { outputs: step.artifacts ?? [] },
+    })),
+  }
+  const html = renderHtmlReport({ run, plan: graphPlan, provenance: run.provenance, verified: verifyProvenance(run.provenance) })
   const out = typeof flags.out === 'string' ? flags.out : join(workspace, STORE, 'runs', run.id, 'report.html')
   await mkdir(dirname(out), { recursive: true })
   await writeFile(out, html, 'utf8')
