@@ -1,0 +1,53 @@
+# Publish the showcase site.
+#
+# site/ is a static directory with no build step, but the page expects to sit next to its
+# bundle - which it does, because the bundle lives in site/ too. The only thing that has to
+# be true is that the document and the bundle are published together.
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the page and its bundle ship together
+        run: |
+          test -f site/index.html || { echo "site/index.html is missing"; exit 1; }
+          test -f site/site.bundle.js || { echo "site/site.bundle.js is missing: run npm run build:site"; exit 1; }
+          size=$(wc -c < site/site.bundle.js)
+          if [ "$size" -lt 100000 ]; then echo "the bundle is only $size bytes"; exit 1; fi
+          # A page that loads its bundle from an absolute path works locally and 404s here.
+          if grep -qE '(src|href)="/site/' site/index.html; then
+            echo "index.html references /site/ absolutely, which breaks when site/ is the root"
+            exit 1
+          fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

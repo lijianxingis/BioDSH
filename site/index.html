@@ -286,7 +286,15 @@ node bin/dsh-research.mjs export &lt;runId&gt; --workspace ./work
 </footer>
 
 <!-- The bundle, not site.js: the source uses bare imports that a browser cannot resolve. -->
-<!-- Served at "/", so a relative src would resolve to /site.bundle.js. Absolute path. -->
-<script type="module" src="/site/site.bundle.js"></script>
+<!-- Resolved relative to this document, so the page works whether it is served from the
+     repository root (/site/) or published with site/ as the root (/). -->
+<script type="module">
+  // import.meta.url is not available in a classic script, so the module URL is derived from
+  // the document location: './site.bundle.js' resolves next to index.html in both layouts.
+  const script = document.createElement('script')
+  script.type = 'module'
+  script.src = new URL('./site.bundle.js', location.href).href
+  document.body.appendChild(script)
+</script>
 </body>
 </html>
